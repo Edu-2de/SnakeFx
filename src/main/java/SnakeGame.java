@@ -22,6 +22,7 @@ public class SnakeGame extends Pane {
     private Direction currentDirection = Direction.RIGHT;
     private boolean moved = false; // para evitar reversão imediata
     private boolean running = true;
+    private int score = 0; // Corrigido: score é atributo da classe, não do construtor
 
     public SnakeGame() {
         this.canvas = new Canvas(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE);
@@ -50,6 +51,9 @@ public class SnakeGame extends Pane {
                 case RIGHT:
                 case D:
                     if (currentDirection != Direction.LEFT) currentDirection = Direction.RIGHT;
+                    break;
+                case R:
+                    if (!running) restartGame();
                     break;
                 default: break;
             }
@@ -84,6 +88,8 @@ public class SnakeGame extends Pane {
                         moveSnake();
                         draw();
                         moved = true;
+                    } else {
+                        draw(); // Redesenha para mostrar Game Over
                     }
                     lastUpdate[0] = now;
                 }
@@ -110,9 +116,10 @@ public class SnakeGame extends Pane {
 
         snake.addFirst(newPoint);
 
-        // Se pegou comida
         if (newPoint.equals(food)) {
+            score++;
             spawnFood();
+            // Cobra cresce: não remove a cauda!
         } else {
             snake.removeLast();
         }
@@ -130,6 +137,25 @@ public class SnakeGame extends Pane {
         for (Point p : snake) {
             gc.fillRect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
+
+        // Exibe a pontuação
+        gc.setFill(Color.WHITE);
+        gc.fillText("Score: " + score, 10, 20);
+
+        // Exibe Game Over se aplicável
+        if (!running) {
+            gc.setFill(Color.WHITE);
+            gc.fillText("GAME OVER! Pressione R para reiniciar", 100, 200);
+        }
+    }
+
+    private void restartGame() {
+        snake.clear();
+        snake.add(new Point(WIDTH / 2, HEIGHT / 2));
+        currentDirection = Direction.RIGHT;
+        score = 0;
+        running = true;
+        spawnFood();
     }
 
     private static class Point {
