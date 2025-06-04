@@ -16,6 +16,13 @@ public class SnakeGame extends Pane {
     private final LinkedList<Point> snake;
     private Point food;
 
+    private enum Direction {
+        UP, DOWN, LEFT, RIGHT
+    }
+    private Direction currentDirection = Direction.RIGHT;
+    private boolean moved = false; // para evitar reversão imediata
+    private boolean running = true;
+
     public SnakeGame() {
         this.canvas = new Canvas(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE);
         this.getChildren().add(canvas);
@@ -23,8 +30,38 @@ public class SnakeGame extends Pane {
         this.snake = new LinkedList<>();
         snake.add(new Point(WIDTH / 2, HEIGHT / 2));
 
+        setFocusTraversable(true);
+        // Adiciona suporte ao teclado para setas e WASD
+        setOnKeyPressed(event -> {
+            if (!moved) return;
+            switch (event.getCode()) {
+                case UP:
+                case W:
+                    if (currentDirection != Direction.DOWN) currentDirection = Direction.UP;
+                    break;
+                case DOWN:
+                case S:
+                    if (currentDirection != Direction.UP) currentDirection = Direction.DOWN;
+                    break;
+                case LEFT:
+                case A:
+                    if (currentDirection != Direction.RIGHT) currentDirection = Direction.LEFT;
+                    break;
+                case RIGHT:
+                case D:
+                    if (currentDirection != Direction.LEFT) currentDirection = Direction.RIGHT;
+                    break;
+                default: break;
+            }
+            moved = false;
+        });
+
         spawnFood();
         startGameLoop();
+
+        // Solicita foco para garantir que as teclas funcionem
+        this.setOnMouseClicked(e -> requestFocus());
+        requestFocus();
     }
 
     private void spawnFood() {
@@ -38,13 +75,47 @@ public class SnakeGame extends Pane {
     }
 
     private void startGameLoop() {
+        final long[] lastUpdate = {0};
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                draw();
+                if (now - lastUpdate[0] > 150_000_000) { // 150ms por movimento (~6.6 fps)
+                    if (running) {
+                        moveSnake();
+                        draw();
+                        moved = true;
+                    }
+                    lastUpdate[0] = now;
+                }
             }
         };
         timer.start();
+    }
+
+    private void moveSnake() {
+        Point head = snake.getFirst();
+        Point newPoint = null;
+        switch (currentDirection) {
+            case UP: newPoint = new Point(head.x, head.y - 1); break;
+            case DOWN: newPoint = new Point(head.x, head.y + 1); break;
+            case LEFT: newPoint = new Point(head.x - 1, head.y); break;
+            case RIGHT: newPoint = new Point(head.x + 1, head.y); break;
+        }
+
+        // Verifica colisão com borda ou consigo mesmo
+        if (newPoint.x < 0 || newPoint.x >= WIDTH || newPoint.y < 0 || newPoint.y >= HEIGHT || snake.contains(newPoint)) {
+            running = false;
+            return;
+        }
+
+        snake.addFirst(newPoint);
+
+        // Se pegou comida
+        if (newPoint.equals(food)) {
+            spawnFood();
+        } else {
+            snake.removeLast();
+        }
     }
 
     private void draw() {
