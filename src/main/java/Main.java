@@ -11,6 +11,9 @@ public class Main extends Application {
         primaryStage.setTitle("SnakeFx");
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        // Garante que o SnakeGame receba o foco após a janela abrir
+        game.requestFocus();
     }
 
     public static void main(String[] args) {
